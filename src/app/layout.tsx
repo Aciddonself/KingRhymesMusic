@@ -44,12 +44,14 @@ async function getSettings() {
 }
 
 export default async function RootLayout({ children }: { children: ReactNode }) {
-  const session = await getSession().catch(() => null);
-  const settings = await getSettings().catch(() => ({
-    artistName: "KING RHYMES",
-    socialLinks: DEFAULT_SOCIAL_LINKS,
-    streamingLinks: DEFAULT_STREAMING_LINKS,
-  }));
+  const [session, settings] = await Promise.all([
+    getSession().catch(() => null),
+    getSettings().catch(() => ({
+      artistName: "KING RHYMES",
+      socialLinks: DEFAULT_SOCIAL_LINKS,
+      streamingLinks: DEFAULT_STREAMING_LINKS,
+    })),
+  ]);
   const user = session ? { email: session.email, role: session.role, displayName: session.displayName } : null;
   return (
     <html lang="en">
