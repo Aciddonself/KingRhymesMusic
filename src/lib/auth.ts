@@ -1,13 +1,16 @@
+import bcrypt from "bcryptjs";
+import { createHash } from "node:crypto";
 import jwt from "jsonwebtoken";
+import { cookies } from "next/headers";
 import { db } from "@/db";
 import { users } from "@/db/schema";
 import { eq } from "drizzle-orm";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 const JWT_SECRET = process.env.JWT_SECRET || (process.env.NODE_ENV === "production" ? "" : "dev-secret-change-me-please-32chars");
 if (!JWT_SECRET) throw new Error("JWT_SECRET is required in production");
 if (process.env.NODE_ENV === "production" && !process.env.ADMIN_EMAIL) throw new Error("ADMIN_EMAIL is required in production");
-export const ADMIN_EMAIL = (process.env.ADMIN_EMAIL || "kingrhmestherapper@gmail.com").toLowerCase();
+export const ADMIN_EMAIL = (process.env.ADMIN_EMAIL || "admin@kingrhymesmusic.com").toLowerCase();
+const COOKIE_NAME = "kingrhymes_session";
 
 export type SessionUser = {
   id: string;
@@ -17,61 +20,57 @@ export type SessionUser = {
   role: string;
 };
 
-export async function getSession(): Promise<SessionUser | null> {
+export async function hashPassword(pw: string) {
+  return bcrypt.hash(pw, 10);
+}
+export async function verifyPassword(pw: string, hash: string) {
+  return bcrypt.compare(pw, hash);
+}
+
+export function signSession(user: SessionUser) {
+  return jwt.sign(user, JWT_SECRET, { expiresIn: "30d" });
+}
+export function verifySessionToken(token: string): SessionUser | null {
   try {
-    const supabase = await createSupabaseServerClient();
-    const { data: { user }, error } = await supabase.auth.getUser();
-    if (!user || error || !user.email) return null;
-    const rows = await db.select().from(users).where(eq(users.email, user.email.toLowerCase()));
-    if (!rows.length) {
-      return await syncSupabaseUser(user);
-    }
-    const u = rows[0];
-    return { id: u.id, email: u.email, displayName: u.displayName, avatarUrl: u.avatarUrl, role: u.role };
+    return jwt.verify(token, JWT_SECRET) as SessionUser;
   } catch {
     return null;
   }
 }
 
-type SupabaseUser = {
-  id: string;
-  email?: string;
-  user_metadata?: Record<string, unknown>;
-  app_metadata?: Record<string, unknown>;
-};
-
-export async function syncSupabaseUser(user: SupabaseUser): Promise<SessionUser | null> {
-  if (!user.email) return null;
-  const email = user.email.toLowerCase();
-  const displayName = String(user.user_metadata?.full_name || user.user_metadata?.name || "Fan").slice(0, 120);
-  const avatarUrl = user.user_metadata?.avatar_url ? String(user.user_metadata.avatar_url) : null;
-  const provider = String(user.app_metadata?.provider || "email").slice(0, 20);
-  const role = email === ADMIN_EMAIL ? "admin" : "fan";
+export async function getSession(): Promise<SessionUser | null> {
   try {
-    const existing = await db.select().from(users).where(eq(users.email, email));
-    if (existing.length) {
-      const updated = await db
-        .update(users)
-        .set({ displayName, avatarUrl: avatarUrl ?? undefined, provider, role })
-        .where(eq(users.email, email))
-        .returning();
-      const u = updated[0] ?? existing[0];
-      return { id: u.id, email: u.email, displayName: u.displayName, avatarUrl: u.avatarUrl, role: u.role };
-    }
-    const inserted = await db
-      .insert(users)
-      .values({ email, displayName, avatarUrl: avatarUrl ?? null, provider, role })
-      .returning();
-    const u = inserted[0];
-    return { id: u.id, email: u.email, displayName: u.displayName, avatarUrl: u.avatarUrl, role: u.role };
+    const store = await cookies();
+    const token = store.get(COOKIE_NAME)?.value;
+    if (!token) return null;
+    return verifySessionToken(token);
   } catch {
-    return { id: user.id, email, displayName, avatarUrl, role };
+    return null;
   }
 }
 
 export function isAdminEmail(email?: string | null) {
   return !!email && email.toLowerCase() === ADMIN_EMAIL;
 }
+
+export async function ensureAdmin(email: string, displayName = "Artist") {
+  const existing = await db.select().from(users).where(eq(users.email, email.toLowerCase()));
+  if (existing.length > 0) {
+    return existing[0];
+  }
+  const inserted = await db
+    .insert(users)
+    .values({
+      email: email.toLowerCase(),
+      displayName,
+      role: "admin",
+      provider: "email",
+    })
+    .returning();
+  return inserted[0];
+}
+
+export const SESSION_COOKIE = COOKIE_NAME;
 
 export function signDownload(payload: { purchaseId?: string; songId: string; email?: string }, expiresIn = "10m") {
   return jwt.sign(payload, JWT_SECRET, { expiresIn } as jwt.SignOptions);
@@ -94,6 +93,10 @@ export function rateLimit(key: string, limit = 20, windowMs = 60_000): boolean {
   }
   b.count += 1;
   return b.count <= limit;
+}
+
+export function hashResetToken(token: string) {
+  return createHash("sha256").update(token).digest("hex");
 }
 
 const BAD_WORDS = ["fuck", "shit", "bitch", "asshole", "dick", "porn", "xxx", "viagra", "casino", "crypto giveaway"];

@@ -14,8 +14,14 @@ function LoginForm() {
   const [loading, setLoading] = useState(false);
   const { push } = useToast();
   const router = useRouter();
-  const adminMode = useSearchParams().get("next") === "/admin";
-  const authError = useSearchParams().get("error") === "authentication";
+  const searchParams = useSearchParams();
+  const adminMode = searchParams.get("next") === "/admin";
+  const errorCode = searchParams.get("error");
+  const authError = errorCode === "authentication"
+    ? "Authentication failed or expired. Please try signing in again."
+    : errorCode
+      ? "Google sign-in could not be completed. Please try again or use email and password."
+      : "";
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -70,7 +76,7 @@ function LoginForm() {
         </div>
 
         <form onSubmit={submit} className="space-y-4">
-          {authError && <p role="alert" className="rounded-xl border border-red-400/20 bg-red-400/[0.06] p-3 text-xs text-red-200">Authentication failed or expired. Please try signing in again.</p>}
+          {authError && <p role="alert" className="rounded-xl border border-red-400/20 bg-red-400/[0.06] p-3 text-xs text-red-200">{authError}</p>}
           <div>
             <label htmlFor="email" className="text-xs font-medium text-white/55">Email address</label>
             <Input id="email" autoComplete="email" required type="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="you@example.com" className="mt-1.5" />

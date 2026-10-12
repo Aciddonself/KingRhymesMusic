@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { syncSupabaseUser } from "@/lib/auth";
-import { rateLimit } from "@/lib/auth";
+import { db } from "@/db";
+import { users } from "@/db/schema";
+import { eq } from "drizzle-orm";
+import { verifyPassword, signSession, SESSION_COOKIE, ADMIN_EMAIL, rateLimit } from "@/lib/auth";
 
 export async function POST(req: Request) {
   const ip = req.headers.get("x-real-ip") || req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
@@ -11,24 +12,18 @@ export async function POST(req: Request) {
   try {
     const { email, password } = await req.json();
     if (!email || !password) return NextResponse.json({ error: "Email and password required" }, { status: 400 });
-
-    const supabase = await createSupabaseServerClient();
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email: String(email).toLowerCase().trim(),
-      password,
-    });
-
-    if (error || !data.user) {
-      return NextResponse.json({ error: error?.message || "Invalid email or password" }, { status: 401 });
-    }
-
-    const sessionUser = await syncSupabaseUser(data.user);
-    if (!sessionUser) return NextResponse.json({ error: "Account sync failed" }, { status: 500 });
-
-    return NextResponse.json({
-      ok: true,
-      user: { id: sessionUser.id, email: sessionUser.email, displayName: sessionUser.displayName, role: sessionUser.role },
-    });
+    const cleanEmail = String(email).toLowerCase().trim();
+    const rows = await db.select().from(users).where(eq(users.email, cleanEmail));
+    if (!rows.length) return NextResponse.json({ error: "No account found. Please sign up." }, { status: 401 });
+    const u = rows[0];
+    if (!u.passwordHash) return NextResponse.json({ error: "This account uses Google login" }, { status: 401 });
+    const ok = await verifyPassword(password, u.passwordHash);
+    if (!ok) return NextResponse.json({ error: "Wrong password" }, { status: 401 });
+    const role = u.role;
+    const token = signSession({ id: u.id, email: u.email, displayName: u.displayName, avatarUrl: u.avatarUrl, role });
+    const res = NextResponse.json({ ok: true, user: { id: u.id, email: u.email, displayName: u.displayName, role } });
+    res.cookies.set(SESSION_COOKIE, token, { httpOnly: true, sameSite: "lax", secure: process.env.NODE_ENV === "production", path: "/", maxAge: 60 * 60 * 24 * 30 });
+    return res;
   } catch (e) {
     console.error(e);
     return NextResponse.json({ error: "Login failed" }, { status: 500 });

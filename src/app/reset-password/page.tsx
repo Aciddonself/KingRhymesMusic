@@ -11,10 +11,15 @@ function ResetPasswordForm() {
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const searchParams = useSearchParams();
+  const token = searchParams.get("token") || "";
   const hasAuthError = searchParams.get("error") === "authentication";
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (!token) {
+      setError("This reset link is invalid or has expired. Request a new one.");
+      return;
+    }
     setLoading(true);
     setMessage("");
     setError("");
@@ -22,7 +27,7 @@ function ResetPasswordForm() {
       const response = await fetch("/api/auth/reset-password", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ password }),
+        body: JSON.stringify({ token, password }),
       });
       const result = await response.json();
       if (!response.ok) throw new Error(result.error || "Could not reset your password.");
@@ -41,7 +46,7 @@ function ResetPasswordForm() {
         <div className="pointer-events-none absolute inset-x-10 top-0 h-px bg-linear-to-r from-transparent via-gold-soft/70 to-transparent" />
         <div className="text-[10px] font-bold uppercase tracking-[0.24em] text-gold">Secure account recovery</div>
         <h1 className="mt-3 font-display text-4xl">Choose a new password</h1>
-        <p className="mt-3 text-sm leading-6 text-white/50">Use at least 12 characters. Your secure Supabase reset link expires automatically.</p>
+        <p className="mt-3 text-sm leading-6 text-white/50">Use at least 12 characters. Your secure reset link expires automatically.</p>
         <form onSubmit={submit} className="mt-7 space-y-4">
           <div>
             <label htmlFor="password" className="text-xs font-medium text-white/55">New password</label>

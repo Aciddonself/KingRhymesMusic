@@ -15,10 +15,19 @@ import {
 export const users = pgTable("users", {
   id: uuid("id").primaryKey().defaultRandom(),
   email: varchar("email", { length: 255 }).notNull().unique(),
+  passwordHash: text("password_hash"),
   displayName: varchar("display_name", { length: 120 }).notNull().default("Fan"),
   avatarUrl: text("avatar_url"),
   role: varchar("role", { length: 20 }).notNull().default("fan"),
   provider: varchar("provider", { length: 20 }).notNull().default("email"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const passwordResetTokens = pgTable("password_reset_tokens", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  tokenHash: text("token_hash").notNull().unique(),
+  expiresAt: timestamp("expires_at").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

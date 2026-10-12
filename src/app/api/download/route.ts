@@ -1,4 +1,6 @@
 import { NextResponse } from "next/server";
+import { readFile } from "node:fs/promises";
+import path from "node:path";
 import { db } from "@/db";
 import { songs, purchases } from "@/db/schema";
 import { eq } from "drizzle-orm";
@@ -35,10 +37,19 @@ export async function GET(req: Request) {
   try {
     const inline = searchParams.get("inline") === "1";
     const privateMedia = await getPrivateMediaUrl(filePath, 300, inline ? "inline" : "attachment");
-    if (!privateMedia) return NextResponse.json({ error: "Audio is not stored in Supabase Storage" }, { status: 404 });
-    return NextResponse.redirect(privateMedia.url);
+    if (privateMedia?.url) return NextResponse.redirect(privateMedia.url);
+    const buf = privateMedia?.localBytes ?? await readFile(path.join(process.cwd(), "public", filePath.replace(/^\//, "")));
+    const ext = filePath.split(".").pop()?.toLowerCase() || "mp3";
+    const mime = ext === "wav" ? "audio/wav" : ext === "ogg" ? "audio/ogg" : ext === "m4a" ? "audio/mp4" : ext === "flac" ? "audio/flac" : "audio/mpeg";
+    return new NextResponse(new Uint8Array(buf), {
+      headers: {
+        "Content-Type": mime,
+        "Content-Disposition": `${inline ? "inline" : "attachment"}; filename="${song.slug}.${ext}"`,
+        "Cache-Control": "private, max-age=60",
+      },
+    });
   } catch (e) {
-    console.error("Supabase audio download failed", e);
-    return NextResponse.json({ error: "Could not retrieve the audio file" }, { status: 500 });
+    console.error("Audio download failed", e);
+    return NextResponse.json({ error: "File missing on server" }, { status: 404 });
   }
 }

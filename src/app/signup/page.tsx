@@ -17,6 +17,7 @@ export default function SignupPage() {
 
   async function submit() {
     if (!name.trim()) return push("Enter a display name", "error");
+    if (password.length < 12) return push("Password must be at least 12 characters", "error");
     setLoading(true);
     try {
       const r = await fetch("/api/auth/signup", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ displayName: name, email, password, adminSetupToken }) });
