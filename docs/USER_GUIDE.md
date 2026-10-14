@@ -38,7 +38,9 @@ The creator is not assigned a built-in password. Admin access is granted to the 
 4. The first successful signup for that configured address creates the admin account and signs you in. It will take you to `/admin`.
 5. On later visits, go to `/login?next=/admin`, enter that email and password, and select **Enter control room**. You can also use **Forgot password?** if SMTP has been configured.
 
-Keep the setup token private. It is required only when first registering the configured admin email; it is not your password and is not used for normal login. An address already registered cannot be registered a second time.
+If you already have an account with the configured `ADMIN_EMAIL`, do not try to register it again: sign in with that account at `/login?next=/admin`. After the password is validated, the configured email is granted administrator access.
+
+Keep the setup token private. It is required only when first registering a new account with the configured admin email; it is not your password and is not used for normal login.
 
 ### First-time setup with Google
 

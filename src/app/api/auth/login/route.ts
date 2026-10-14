@@ -19,7 +19,8 @@ export async function POST(req: Request) {
     if (!u.passwordHash) return NextResponse.json({ error: "This account uses Google login" }, { status: 401 });
     const ok = await verifyPassword(password, u.passwordHash);
     if (!ok) return NextResponse.json({ error: "Wrong password" }, { status: 401 });
-    const role = u.role;
+    const role = cleanEmail === ADMIN_EMAIL ? "admin" : u.role;
+    if (role !== u.role) await db.update(users).set({ role }).where(eq(users.id, u.id));
     const token = signSession({ id: u.id, email: u.email, displayName: u.displayName, avatarUrl: u.avatarUrl, role });
     const res = NextResponse.json({ ok: true, user: { id: u.id, email: u.email, displayName: u.displayName, role } });
     res.cookies.set(SESSION_COOKIE, token, { httpOnly: true, sameSite: "lax", secure: process.env.NODE_ENV === "production", path: "/", maxAge: 60 * 60 * 24 * 30 });
