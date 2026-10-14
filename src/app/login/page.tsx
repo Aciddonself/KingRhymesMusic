@@ -19,6 +19,8 @@ function LoginForm() {
   const errorCode = searchParams.get("error");
   const authError = errorCode === "authentication"
     ? "Authentication failed or expired. Please try signing in again."
+    : errorCode === "oauth_unavailable"
+      ? "Google sign-in is not configured yet. Please use your email and password or contact the site administrator."
     : errorCode
       ? "Google sign-in could not be completed. Please try again or use email and password."
       : "";

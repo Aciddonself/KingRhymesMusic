@@ -1,7 +1,11 @@
 import type { NextConfig } from "next";
 
+const useStandaloneOutput =
+  process.env.NEXT_OUTPUT === "standalone" ||
+  (process.env.NEXT_OUTPUT !== "default" && process.env.NETLIFY !== "true");
+
 const nextConfig: NextConfig = {
-  output: "standalone",
+  ...(useStandaloneOutput ? { output: "standalone" as const } : {}),
   async headers() {
     return [
       {

@@ -24,7 +24,7 @@ export default function SignupPage() {
       const j = await r.json();
       if (!r.ok) throw new Error(j.error || "Signup failed");
       push(j.emailConfirmationRequired ? "Check your email to confirm your account." : `Karibu, ${j.user.displayName}!`, j.emailConfirmationRequired ? "info" : "success");
-      router.push(j.emailConfirmationRequired ? "/login" : "/music");
+      router.push(j.emailConfirmationRequired ? "/login" : j.user.role === "admin" ? "/admin" : "/music");
       router.refresh();
     } catch (e: unknown) {
       push(e instanceof Error ? e.message : "Failed", "error");

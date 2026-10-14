@@ -6,8 +6,13 @@ import { safeInternalPath } from "@/lib/redirect";
 const STATE_COOKIE = "kingrhymes_google_oauth";
 
 export async function GET(request: Request) {
+  const requestUrl = new URL(request.url);
+  const nextPath = safeInternalPath(requestUrl.searchParams.get("next"), "/music");
   if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET) {
-    return NextResponse.json({ error: "Google sign-in is not configured." }, { status: 503 });
+    const loginUrl = new URL("/login", requestUrl);
+    loginUrl.searchParams.set("error", "oauth_unavailable");
+    loginUrl.searchParams.set("next", nextPath);
+    return NextResponse.redirect(loginUrl);
   }
 
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || new URL(request.url).origin;
@@ -17,7 +22,6 @@ export async function GET(request: Request) {
     new URL("/api/auth/google/callback", siteUrl).toString()
   );
   const state = randomBytes(32).toString("hex");
-  const nextPath = safeInternalPath(new URL(request.url).searchParams.get("next"), "/music");
   const url = client.generateAuthUrl({
     scope: ["openid", "email", "profile"],
     state,
