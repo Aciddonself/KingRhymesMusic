@@ -46,19 +46,6 @@ export function Navbar({ artistName, user }: { artistName: string; user: { email
           ))}
         </nav>
         <div className="hidden md:flex items-center gap-2">
-          <select
-            value={currency}
-            onChange={(e) => setCurrency(e.target.value)}
-            className="clay-inset rounded-full border border-white/10 bg-white/5 px-3 py-2 text-xs text-white/80 outline-none"
-            title="Currency"
-            aria-label="Currency"
-          >
-            {Object.keys(CURRENCIES).map((c) => (
-              <option key={c} value={c} className="bg-black">
-                {c}
-              </option>
-            ))}
-          </select>
           <Link href="/music" className="rounded-full border border-[#F1D97A]/50 bg-[linear-gradient(145deg,#F1D97A,#D4AF37_58%,#B58D25)] px-5 py-2.5 text-xs font-black uppercase tracking-wider text-black shadow-[inset_0_1px_0_rgba(255,255,255,0.55),0_6px_0_rgba(85,62,16,0.2),0_10px_24px_rgba(0,0,0,0.25)] transition hover:brightness-110">
             ▶ Listen Now
           </Link>

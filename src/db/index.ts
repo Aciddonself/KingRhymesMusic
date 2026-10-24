@@ -19,6 +19,7 @@ export const pool =
     idleTimeoutMillis: 30_000,
     connectionTimeoutMillis: 10_000,
     keepAlive: true,
+    ssl: { rejectUnauthorized: true },
   });
 
 if (process.env.NODE_ENV !== "production") {

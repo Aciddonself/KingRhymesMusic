@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 import "./globals.css";
 import { PlayerProvider } from "@/components/player";
 import { CurrencyProvider, ToastProvider } from "@/components/providers";
-import { Navbar, Footer, SupportFloat } from "@/components/chrome";
+import { Navbar, Footer } from "@/components/chrome";
 import { getSession } from "@/lib/auth";
 import { db } from "@/db";
 import { siteSettings } from "@/db/schema";
@@ -58,12 +58,11 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
       <body className="bg-[#0A0A0A] text-[#F5F1E6] antialiased min-h-screen">
         <ToastProvider>
           <CurrencyProvider>
-            <PlayerProvider>
-              <Navbar artistName={(settings as { artistName: string }).artistName || "KING RHYMES"} user={user} />
-              <main className="pt-16 pb-24 min-h-screen">{children}</main>
-              <Footer artistName={(settings as { artistName: string }).artistName || "KING RHYMES"} socials={(settings as { socialLinks: Record<string, string> }).socialLinks || {}} />
-              <SupportFloat />
-            </PlayerProvider>
+              <PlayerProvider>
+                <Navbar artistName={(settings as { artistName: string }).artistName || "KING RHYMES"} user={user} />
+                <main className="pt-16 pb-24 min-h-screen">{children}</main>
+                <Footer artistName={(settings as { artistName: string }).artistName || "KING RHYMES"} socials={(settings as { socialLinks: Record<string, string> }).socialLinks || {}} />
+              </PlayerProvider>
           </CurrencyProvider>
         </ToastProvider>
       </body>

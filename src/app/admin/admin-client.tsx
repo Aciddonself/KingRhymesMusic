@@ -18,6 +18,7 @@ export default function AdminClient({ user }: { user: { email: string; displayNa
   const { push } = useToast();
 
   async function loadAll() {
+    push("Refreshing...", "info");
     try {
       const [st, so, co, se, pf] = await Promise.all([
         fetch("/api/admin/stats").then((r) => r.json()),
@@ -31,8 +32,10 @@ export default function AdminClient({ user }: { user: { email: string; displayNa
       setComments(co.comments || []);
       setSettings(se.settings || {});
       setPortfolio(pf);
+      push("Refreshed ✓", "success");
     } catch (e) {
       console.error(e);
+      push("Refresh failed", "error");
     }
   }
   useEffect(() => {
@@ -201,7 +204,31 @@ function SongsTab({ songs, onReload, editing, setEditing, showNew, setShowNew, u
         <div className="mt-4 space-y-3">
           <div className="grid sm:grid-cols-2 gap-3">
             <div><label className="text-xs text-white/50">Title *</label><div className="mt-1"><Input value={String(form.title || "")} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="Midnight in Kampala" /></div></div>
-            <div><label className="text-xs text-white/50">Genre</label><div className="mt-1"><Input value={String(form.genre || "")} onChange={(e) => setForm({ ...form, genre: e.target.value })} placeholder="Hip-Hop / Dancehall Fusion" /></div></div>
+            <div>
+              <label className="text-xs text-white/50">Genre</label>
+              <div className="mt-1 flex gap-2">
+                <select
+                  value={["Hip-Hop / Dancehall Fusion", "Hip-Hop", "Dancehall", "Afrobeats", "Reggae", "R&B", "Pop", "Trap", "Drill", "Gospel"].includes(String(form.genre || "")) ? String(form.genre || "") : "custom"}
+                  onChange={(e) => {
+                    if (e.target.value !== "custom") setForm({ ...form, genre: e.target.value });
+                  }}
+                  className="rounded-xl border border-white/10 bg-[#161411] px-3 py-2 text-sm outline-none focus:border-[#D4AF37]/60"
+                >
+                  <option value="Hip-Hop / Dancehall Fusion">Hip-Hop / Dancehall Fusion</option>
+                  <option value="Hip-Hop">Hip-Hop</option>
+                  <option value="Dancehall">Dancehall</option>
+                  <option value="Afrobeats">Afrobeats</option>
+                  <option value="Reggae">Reggae</option>
+                  <option value="R&B">R&B</option>
+                  <option value="Pop">Pop</option>
+                  <option value="Trap">Trap</option>
+                  <option value="Drill">Drill</option>
+                  <option value="Gospel">Gospel</option>
+                  <option value="custom">Custom (type below)</option>
+                </select>
+                <Input value={String(form.genre || "")} onChange={(e) => setForm({ ...form, genre: e.target.value })} placeholder="Or type your own genre" />
+              </div>
+            </div>
           </div>
           <div className="grid sm:grid-cols-2 gap-3">
             <div><label className="text-xs text-white/50">Price USD (change anytime)</label><div className="mt-1"><Input value={String(form.priceUsd || "")} onChange={(e) => setForm({ ...form, priceUsd: e.target.value })} type="number" step="0.01" /></div></div>
@@ -405,11 +432,13 @@ function SettingsTab({ settings, setSettings, songs, uploadFile, push }: {
       <div className="space-y-4">
         <Card>
           <div className="font-bold text-sm">Social links</div>
-          <div className="mt-3 grid grid-cols-2 gap-2">{["instagram", "tiktok", "youtube", "x", "facebook", "spotify", "whatsapp"].map((k) => <div key={k}><label className="text-[11px] text-white/50 capitalize">{k}</label><Input value={social[k] || ""} onChange={(e) => setSettings({ ...settings, socialLinks: { ...social, [k]: e.target.value } })} placeholder={`https://…`} /></div>)}</div>
+          <div className="mt-3 grid grid-cols-2 gap-2">{["instagram", "tiktok", "youtube", "x", "facebook", "spotify", "whatsapp", ...Object.keys(social).filter(k => !["instagram", "tiktok", "youtube", "x", "facebook", "spotify", "whatsapp"].includes(k))].map((k) => <div key={k} className="flex gap-1"><div className="flex-1"><label className="text-[11px] text-white/50 capitalize">{k}</label><Input value={social[k] || ""} onChange={(e) => setSettings({ ...settings, socialLinks: { ...social, [k]: e.target.value } })} placeholder={`https://…`} /></div><button onClick={() => { const newSocial = { ...social }; delete newSocial[k]; setSettings({ ...settings, socialLinks: newSocial }); }} className="self-end mb-1 rounded-full border border-red-500/30 px-2 py-1.5 text-xs text-red-300">✕</button></div>)}</div>
+          <button onClick={() => { const name = prompt("Enter platform name (e.g. SoundCloud, Bandcamp):"); if (name) setSettings({ ...settings, socialLinks: { ...social, [name.toLowerCase()]: "" } }); }} className="mt-2 rounded-full border border-[#D4AF37]/40 px-3 py-1.5 text-xs text-[#D4AF37] hover:bg-[#D4AF37]/10">+ Add social link</button>
         </Card>
         <Card>
           <div className="font-bold text-sm">Streaming links</div>
-          <div className="mt-3 grid grid-cols-2 gap-2">{["spotify", "spotifyApp", "apple", "itunes", "youtube", "audiomack", "boomplay"].map((k) => <div key={k}><label className="text-[11px] text-white/50 capitalize">{k === "spotifyApp" ? "Spotify app link" : k === "apple" ? "Apple Music" : k === "itunes" ? "iTunes Store" : k}</label><Input value={streams[k] || ""} onChange={(e) => setSettings({ ...settings, streamingLinks: { ...streams, [k]: e.target.value } })} placeholder={k === "spotifyApp" ? "spotify:album:…" : "https://…"} /></div>)}</div>
+          <div className="mt-3 grid grid-cols-2 gap-2">{["spotify", "spotifyApp", "apple", "itunes", "youtube", "audiomack", "boomplay", ...Object.keys(streams).filter(k => !["spotify", "spotifyApp", "apple", "itunes", "youtube", "audiomack", "boomplay"].includes(k))].map((k) => <div key={k} className="flex gap-1"><div className="flex-1"><label className="text-[11px] text-white/50 capitalize">{k === "spotifyApp" ? "Spotify app link" : k === "apple" ? "Apple Music" : k === "itunes" ? "iTunes Store" : k}</label><Input value={streams[k] || ""} onChange={(e) => setSettings({ ...settings, streamingLinks: { ...streams, [k]: e.target.value } })} placeholder={k === "spotifyApp" ? "spotify:album:…" : "https://…"} /></div><button onClick={() => { const newStreams = { ...streams }; delete newStreams[k]; setSettings({ ...settings, streamingLinks: newStreams }); }} className="self-end mb-1 rounded-full border border-red-500/30 px-2 py-1.5 text-xs text-red-300">✕</button></div>)}</div>
+          <button onClick={() => { const name = prompt("Enter streaming platform name (e.g. Tidal, Deezer, Bandcamp):"); if (name) setSettings({ ...settings, streamingLinks: { ...streams, [name.toLowerCase()]: "" } }); }} className="mt-2 rounded-full border border-[#D4AF37]/40 px-3 py-1.5 text-xs text-[#D4AF37] hover:bg-[#D4AF37]/10">+ Add streaming link</button>
         </Card>
         <Button onClick={save} className="w-full">Save all settings (live immediately)</Button>
         <Card><div className="font-bold text-sm">Payment provider</div><p className="mt-1 text-xs text-white/45">Flutterwave is configured for hosted checkout. Add its server secrets and webhook hash to the deployment environment.</p><div className="mt-2 inline-flex rounded-full border border-emerald-400/30 bg-emerald-500/10 px-3 py-1 text-xs text-emerald-200">● Flutterwave</div></Card>
