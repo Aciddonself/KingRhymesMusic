@@ -39,16 +39,17 @@ export async function storeMedia(kind: MediaKind, originalName: string, contentT
 
   const folder = folders[kind];
   const key = `${folder}/${Date.now()}-${randomUUID()}${extension}`;
-  const hasAnyS3Config = [
-    process.env.S3_ENDPOINT,
-    process.env.S3_PUBLIC_BUCKET,
-    process.env.S3_PRIVATE_BUCKET,
-    process.env.S3_ACCESS_KEY_ID,
-    process.env.S3_SECRET_ACCESS_KEY,
-    process.env.S3_PUBLIC_URL,
-  ].some(Boolean);
+  const hasCompleteS3Config = Boolean(
+    process.env.S3_ENDPOINT &&
+    process.env.S3_PUBLIC_BUCKET &&
+    process.env.S3_PRIVATE_BUCKET &&
+    process.env.S3_ACCESS_KEY_ID &&
+    process.env.S3_SECRET_ACCESS_KEY &&
+    process.env.S3_PUBLIC_URL
+  );
 
-  if (!hasAnyS3Config && process.env.NODE_ENV !== "production") {
+  if (!hasCompleteS3Config) {
+    // Fall back to local storage in all environments when S3 is not fully configured
     const isPrivate = kind === "audio";
     const directory = isPrivate
       ? path.join(process.cwd(), ".private-uploads", folder)
