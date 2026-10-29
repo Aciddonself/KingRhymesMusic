@@ -28,11 +28,12 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   return (
     <ToastCtx.Provider value={{ push }}>
       {children}
-      <div className="fixed top-4 right-4 z-[120] flex flex-col gap-2 w-[320px] max-w-[calc(100vw-2rem)]">
+      <div className="fixed top-4 right-4 z-[120] flex w-fit max-w-[calc(100vw-2rem)] flex-col items-end gap-2" aria-live="polite">
         {toasts.map((t) => (
           <div
             key={t.id}
-            className={`rounded-xl border px-4 py-3 text-sm shadow-2xl backdrop-blur ${
+            role={t.kind === "error" ? "alert" : "status"}
+            className={`flex max-w-full items-center gap-2 rounded-full border px-3 py-2 text-xs shadow-lg backdrop-blur ${
               t.kind === "success"
                 ? "border-emerald-400/30 bg-emerald-950/90 text-emerald-100"
                 : t.kind === "error"
@@ -40,7 +41,14 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
                   : "border-white/10 bg-[#161411]/95 text-[#F5F1E6]"
             }`}
           >
-            {t.message}
+            {t.message === "Refreshing..." ? (
+              <span className="h-3.5 w-3.5 shrink-0 animate-spin rounded-full border-2 border-current border-r-transparent" aria-hidden="true" />
+            ) : t.kind === "success" ? (
+              <span className="grid h-4 w-4 shrink-0 place-items-center rounded-full bg-emerald-400/20 text-[10px]" aria-hidden="true">✓</span>
+            ) : t.kind === "error" ? (
+              <span className="grid h-4 w-4 shrink-0 place-items-center rounded-full bg-red-400/20 text-[10px]" aria-hidden="true">!</span>
+            ) : null}
+            <span className="min-w-0">{t.message}</span>
           </div>
         ))}
       </div>

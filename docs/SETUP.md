@@ -29,9 +29,46 @@ The application stores account profiles, content, and purchases in PostgreSQL. `
 
 ## 3. Configure email and sign-in
 
-Password recovery requires working SMTP settings: `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`, and `SMTP_FROM`. Reset links expire after 30 minutes. For local testing, use a trusted SMTP provider or sandbox account.
+### SMTP (password recovery and account email)
 
-To enable Google sign-in, create an OAuth 2.0 **Web application** client in Google Cloud Console, enable the Google Identity API if prompted, and set `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` in the local `.env.local` or hosting provider's server-side environment settings. Add the exact callback URL `https://YOUR_PUBLIC_DOMAIN/api/auth/google/callback` to the OAuth client's **Authorized redirect URIs**. For local development, also add `http://localhost:3000/api/auth/google/callback`. Set `NEXT_PUBLIC_SITE_URL` to the same origin users visit, without a trailing slash; the callback URI must match it exactly. Add user accounts as OAuth test users while the Google consent screen is in testing mode. Restart/redeploy after setting credentials. Google sign-in requires a verified email.
+1. Choose an SMTP email provider and verify the sender/domain there. For local testing, a provider sandbox is suitable; for production, use a provider/domain authorized to send your site's mail.
+2. Create SMTP credentials in that provider's dashboard. Use its host, port, username, and password. Port `587` is commonly used with STARTTLS; use the exact values and encryption method documented by your provider.
+3. Add the credentials to `.env.local` for local work and to your hosting provider's **server-side** environment settings for production:
+
+   ```dotenv
+   SMTP_HOST=smtp.provider.example
+   SMTP_PORT=587
+   SMTP_USER=your-smtp-username
+   SMTP_PASSWORD=your-smtp-password
+   SMTP_FROM=King Rhymes <no-reply@your-domain.example>
+   ```
+
+   `SMTP_FROM` must use a sender address accepted by the provider. Keep the password private and never use a `NEXT_PUBLIC_` variable for it.
+4. Restart the local server or redeploy the production site after changing environment variables. Test password recovery from `/forgot-password` and confirm that the email arrives. Reset links expire after 30 minutes.
+
+For Gmail SMTP specifically, enable 2-Step Verification on the Google account, create an **App password** in Google Account security settings, and use `smtp.gmail.com`, port `587`, the Gmail address as `SMTP_USER`, and that app password as `SMTP_PASSWORD`. Do not use the account's normal password. Gmail may be unsuitable for production/high-volume sending; follow Google's sending limits and use a transactional provider when appropriate.
+
+### Google sign-in
+
+1. In [Google Cloud Console](https://console.cloud.google.com/), select or create a project. Configure the OAuth consent screen/Google Auth Platform with an app name, support email, and developer contact email. Add the requested scopes (`openid`, `email`, and `profile`); while the app is in **Testing**, add the Google accounts that should be able to sign in as test users.
+2. Create an OAuth client ID with application type **Web application**. Under **Authorized redirect URIs**, add the exact callback for each environment:
+
+   ```text
+   http://localhost:3000/api/auth/google/callback
+   https://YOUR_PUBLIC_DOMAIN/api/auth/google/callback
+   ```
+
+   Replace `YOUR_PUBLIC_DOMAIN` with the actual domain, with no trailing slash before `/api`. The URI must match the site origin and path exactly.
+3. Copy the generated client ID and client secret into `.env.local` for local development and the host's server-side environment settings for production:
+
+   ```dotenv
+   GOOGLE_CLIENT_ID=your-client-id
+   GOOGLE_CLIENT_SECRET=your-client-secret
+   NEXT_PUBLIC_SITE_URL=https://YOUR_PUBLIC_DOMAIN
+   ```
+
+   For local development, set `NEXT_PUBLIC_SITE_URL=http://localhost:3000`. It must match the origin used for the sign-in flow. Never expose the client secret in a `NEXT_PUBLIC_` variable.
+4. Restart the local server or redeploy after changing variables, then test **Continue with Google** on `/login` and `/signup`. Google sign-in requires a verified email. To allow anyone outside your test-user list to sign in, publish/verify the consent configuration as required by Google.
 
 For email/password setup, create the account at `/signup` using the exact `ADMIN_EMAIL` value and provide `ADMIN_SETUP_TOKEN`. The first successful signup for that address becomes the administrator. If an account for that email already exists, a successful password login promotes that configured address to administrator. Alternatively, Google sign-in grants administrator access to the configured email only when Google confirms that email as verified. Other accounts receive fan access. See [the webapp user guide](USER_GUIDE.md) for creator login and everyday usage.
 

@@ -84,8 +84,8 @@ export default function HomePage() {
       <section className="relative overflow-hidden">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(212,175,55,0.14),transparent_60%)]" />
         <div className="absolute inset-0 grain" />
-        <div className="relative mx-auto max-w-7xl px-4 sm:px-6 pt-14 pb-16 grid gap-10 lg:grid-cols-2 items-center">
-          <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7 }}>
+        <div className="relative mx-auto max-w-7xl min-w-0 px-4 sm:px-6 pt-14 pb-16 grid gap-10 lg:grid-cols-2 items-center">
+          <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7 }} className="min-w-0">
             <div className="max-w-full overflow-hidden rounded-full border border-[#D4AF37]/30 bg-[#D4AF37]/10 py-1 text-[#D4AF37]" role="img" aria-label="Phone symbol: Holla If You Hear Me">
               <div className="flex w-max animate-marquee motion-reduce:animate-none" aria-hidden="true">
                 {[0, 1].map((copy) => (
@@ -131,7 +131,7 @@ export default function HomePage() {
               <span><strong className="text-[#D4AF37] text-base">{donors.length}</strong> supporters</span>
             </div>
           </motion.div>
-          <motion.div initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.8 }} className="relative flex justify-center">
+          <motion.div initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.8 }} className="relative order-first flex w-full min-w-0 justify-center lg:order-last">
             <div className="relative mx-auto aspect-[4/5] w-full max-w-xs sm:max-w-sm md:max-w-md overflow-hidden rounded-[2rem] border border-white/10 bg-[#0A0A0A] shadow-2xl animate-floaty">
               <motion.img
                 key={activeHeroSlide.imageUrl}
