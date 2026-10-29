@@ -50,24 +50,32 @@ export async function storeMedia(kind: MediaKind, originalName: string, contentT
   );
 
   if (!hasCompleteS3Config) {
-    // Try Vercel Blob first (works on Vercel serverless)
-    try {
+    const privateMedia = kind === "audio";
+    const isProduction = process.env.NODE_ENV === "production";
+
+    if (privateMedia && isProduction) {
+      throw new Error("S3 storage must be fully configured for private audio uploads in production");
+    }
+
+    if (!privateMedia && isProduction && !process.env.BLOB_READ_WRITE_TOKEN) {
+      throw new Error("Configure complete S3 storage or BLOB_READ_WRITE_TOKEN for production media uploads");
+    }
+
+    if (!privateMedia && process.env.BLOB_READ_WRITE_TOKEN) {
       const blob = await put(key, Buffer.from(bytes), {
         access: "public",
         contentType,
         addRandomSuffix: true,
       });
       return blob.url;
-    } catch {
-      // Fall back to local storage (works on localhost)
-      const isPrivate = kind === "audio";
-      const directory = isPrivate
-        ? path.join(process.cwd(), ".private-uploads", folder)
-        : path.join(process.cwd(), "public", "uploads", folder);
-      await mkdir(directory, { recursive: true });
-      await writeFile(path.join(directory, path.basename(key)), Buffer.from(bytes));
-      return isPrivate ? `local-audio://${path.basename(key)}` : `/uploads/${key}`;
     }
+
+    const directory = privateMedia
+      ? path.join(process.cwd(), ".private-uploads", folder)
+      : path.join(process.cwd(), "public", "uploads", folder);
+    await mkdir(directory, { recursive: true });
+    await writeFile(path.join(directory, path.basename(key)), Buffer.from(bytes));
+    return privateMedia ? `local-audio://${path.basename(key)}` : `/uploads/${key}`;
   }
 
   const privateMedia = kind === "audio";

@@ -102,7 +102,7 @@ Tigris's AWS SDK configuration requires virtual-host-style requests; `S3_FORCE_P
 
 Set `S3_ENDPOINT`, `S3_REGION`, `S3_PUBLIC_BUCKET`, `S3_PRIVATE_BUCKET`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY`, and `S3_PUBLIC_URL` to the values from your provider. `S3_FORCE_PATH_STYLE` should be set to `false` or `true` to match the provider's S3 SDK instructions. Keep private audio in a private bucket.
 
-When S3 credentials are not configured, development uploads are stored locally under `public/uploads/` and `.private-uploads/`. Local filesystem storage is not suitable for production or ephemeral deployments.
+When S3 credentials are not configured, development uploads are stored locally under `public/uploads/` and `.private-uploads/`. Public media can use Vercel Blob when `BLOB_READ_WRITE_TOKEN` is configured; do not use public Blob storage for full audio. Production private audio uploads require complete S3-compatible storage configuration, and production public uploads require complete S3-compatible storage or Vercel Blob. Local filesystem storage is not suitable for production or ephemeral deployments; production uploads now fail explicitly when no persistent storage is configured.
 
 The supplied artist photos and logo are bundled under `public/pics/` and used as the default hero and portfolio gallery. The admin can replace the hero photo, upload more gallery images, edit the artist profile and biography, publish songs, curate the portfolio, moderate comments, and update social and streaming links.
 
