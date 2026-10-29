@@ -3,6 +3,7 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { GetObjectCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import { put } from "@vercel/blob";
 
 type MediaKind = "audio" | "preview" | "cover" | "image" | "hero";
 
@@ -49,14 +50,24 @@ export async function storeMedia(kind: MediaKind, originalName: string, contentT
   );
 
   if (!hasCompleteS3Config) {
-    // Fall back to local storage in all environments when S3 is not fully configured
-    const isPrivate = kind === "audio";
-    const directory = isPrivate
-      ? path.join(process.cwd(), ".private-uploads", folder)
-      : path.join(process.cwd(), "public", "uploads", folder);
-    await mkdir(directory, { recursive: true });
-    await writeFile(path.join(directory, path.basename(key)), Buffer.from(bytes));
-    return isPrivate ? `local-audio://${path.basename(key)}` : `/uploads/${key}`;
+    // Try Vercel Blob first (works on Vercel serverless)
+    try {
+      const blob = await put(key, Buffer.from(bytes), {
+        access: "public",
+        contentType,
+        addRandomSuffix: true,
+      });
+      return blob.url;
+    } catch {
+      // Fall back to local storage (works on localhost)
+      const isPrivate = kind === "audio";
+      const directory = isPrivate
+        ? path.join(process.cwd(), ".private-uploads", folder)
+        : path.join(process.cwd(), "public", "uploads", folder);
+      await mkdir(directory, { recursive: true });
+      await writeFile(path.join(directory, path.basename(key)), Buffer.from(bytes));
+      return isPrivate ? `local-audio://${path.basename(key)}` : `/uploads/${key}`;
+    }
   }
 
   const privateMedia = kind === "audio";
