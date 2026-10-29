@@ -74,7 +74,33 @@ For email/password setup, create the account at `/signup` using the exact `ADMIN
 
 ## 4. Configure persistent media uploads
 
-In production, configure an S3-compatible object store such as Cloudflare R2. Set `S3_ENDPOINT`, `S3_REGION`, `S3_PUBLIC_BUCKET`, `S3_PRIVATE_BUCKET`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY`, and `S3_PUBLIC_URL`. Public media (covers, previews, and gallery images) is served from the public bucket URL. Purchased full audio is stored in the private bucket and served using short-lived signed URLs after purchase checks.
+In production, configure an S3-compatible object store such as Tigris or Cloudflare R2. Public media (covers, previews, and gallery images) is served from the public bucket URL. Purchased full audio is stored in the private bucket and served using short-lived signed URLs after purchase checks.
+
+### Tigris Object Storage
+
+1. In the [Tigris Console](https://console.storage.dev), create two buckets: one for public media and a separate private bucket for purchased full audio. Enable public reads or a public custom domain for the public bucket only; do not make the audio bucket public.
+2. Create an access key with read/write permissions for the two buckets. Treat the key and secret as credentials: add them only to local ignored `.env.local` and your host's server-side secret settings.
+3. Configure the app with Tigris's S3 endpoint and virtual-host addressing. Replace the bucket names, keys, and public URL with the values from your Tigris setup:
+
+   ```dotenv
+   S3_ENDPOINT=https://t3.storage.dev
+   S3_REGION=auto
+   S3_FORCE_PATH_STYLE=false
+   S3_PUBLIC_BUCKET=your-public-media-bucket
+   S3_PRIVATE_BUCKET=your-private-audio-bucket
+   S3_ACCESS_KEY_ID=tid_your_access_key
+   S3_SECRET_ACCESS_KEY=tsec_your_secret_key
+   S3_PUBLIC_URL=https://your-public-media-bucket.t3.storage.dev
+   ```
+
+   `S3_PUBLIC_URL` must be a working public URL for the public bucket, or a custom domain you have connected to it. Verify the base URL by opening a publicly readable object after uploading it. Keep the private audio bucket private: the app creates temporary signed URLs for purchased audio.
+4. Add the same variables to your production host's environment/secret settings, restart locally or redeploy, then test uploading a cover and downloading a purchased track.
+
+Tigris's AWS SDK configuration requires virtual-host-style requests; `S3_FORCE_PATH_STYLE=false` configures this. For other S3-compatible providers, use their required addressing style. `S3_FORCE_PATH_STYLE` defaults to `true` to preserve the existing Cloudflare R2-style configuration.
+
+### Other S3-compatible storage
+
+Set `S3_ENDPOINT`, `S3_REGION`, `S3_PUBLIC_BUCKET`, `S3_PRIVATE_BUCKET`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY`, and `S3_PUBLIC_URL` to the values from your provider. `S3_FORCE_PATH_STYLE` should be set to `false` or `true` to match the provider's S3 SDK instructions. Keep private audio in a private bucket.
 
 When S3 credentials are not configured, development uploads are stored locally under `public/uploads/` and `.private-uploads/`. Local filesystem storage is not suitable for production or ephemeral deployments.
 

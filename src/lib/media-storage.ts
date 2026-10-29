@@ -27,7 +27,7 @@ function getS3Client() {
 
   client ??= new S3Client({
     region,
-    ...(endpoint ? { endpoint, forcePathStyle: true } : {}),
+    ...(endpoint ? { endpoint, forcePathStyle: process.env.S3_FORCE_PATH_STYLE !== "false" } : {}),
     credentials: { accessKeyId, secretAccessKey },
   });
 
