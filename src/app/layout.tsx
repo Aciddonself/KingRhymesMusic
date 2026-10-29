@@ -4,6 +4,7 @@ import "./globals.css";
 import { PlayerProvider } from "@/components/player";
 import { CurrencyProvider, ToastProvider } from "@/components/providers";
 import { Navbar, Footer } from "@/components/chrome";
+import { VisitorTracker } from "@/components/visitor-tracker";
 import { getSession } from "@/lib/auth";
 import { db } from "@/db";
 import { siteSettings } from "@/db/schema";
@@ -62,6 +63,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
                 <Navbar artistName={(settings as { artistName: string }).artistName || "KING RHYMES"} user={user} />
                 <main className="pt-16 pb-24 min-h-screen">{children}</main>
                 <Footer artistName={(settings as { artistName: string }).artistName || "KING RHYMES"} socials={(settings as { socialLinks: Record<string, string> }).socialLinks || {}} />
+                <VisitorTracker />
               </PlayerProvider>
           </CurrencyProvider>
         </ToastProvider>

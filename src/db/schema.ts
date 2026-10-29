@@ -169,3 +169,10 @@ export const pressItems = pgTable("press_items", {
   author: varchar("author", { length: 120 }),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
+export const visitors = pgTable("visitors", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  path: varchar("path", { length: 255 }).notNull(),
+  userAgent: text("user_agent"),
+  ip: varchar("ip", { length: 64 }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});

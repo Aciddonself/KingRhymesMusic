@@ -8,6 +8,7 @@ type Tab = "overview" | "songs" | "sales" | "donations" | "comments" | "portfoli
 export default function AdminClient({ user }: { user: { email: string; displayName: string } }) {
   const [tab, setTab] = useState<Tab>("overview");
   const [stats, setStats] = useState<Record<string, unknown> | null>(null);
+
   const [songs, setSongs] = useState<Record<string, unknown>[]>([]);
   const [comments, setComments] = useState<Record<string, unknown>[]>([]);
   const [settings, setSettings] = useState<Record<string, unknown>>({});
@@ -20,18 +21,20 @@ export default function AdminClient({ user }: { user: { email: string; displayNa
   async function loadAll() {
     push("Refreshing...", "info");
     try {
-      const [st, so, co, se, pf] = await Promise.all([
+      const [st, so, co, se, pf, vi] = await Promise.all([
         fetch("/api/admin/stats").then((r) => r.json()),
         fetch("/api/songs?admin=1").then((r) => r.json()),
         fetch("/api/comments?admin=1").then((r) => r.json()),
         fetch("/api/settings").then((r) => r.json()),
         fetch("/api/portfolio").then((r) => r.json()),
+        fetch("/api/visitors").then((r) => r.json()),
       ]);
       if (!st.error) setStats(st);
       setSongs(so.songs || []);
       setComments(co.comments || []);
       setSettings(se.settings || {});
       setPortfolio(pf);
+
       push("Refreshed ✓", "success");
     } catch (e) {
       console.error(e);
@@ -107,17 +110,14 @@ export default function AdminClient({ user }: { user: { email: string; displayNa
     </div>
   );
 }
-
 function Overview({ stats }: { stats: Record<string, unknown> | null }) {
   if (!stats) return <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">{[1, 2, 3, 4].map((i) => <div key={i} className="h-28 animate-pulse rounded-2xl bg-white/[0.05]" />)}</div>;
   const cards = [
-    { l: "Revenue (sales)", v: `$${Number(stats.revenue as number || 0).toFixed(2)}`, e: "💰" },
-    { l: "Donations", v: `$${Number(stats.donationTotal as number || 0).toFixed(2)}`, e: "♥" },
-    { l: "Plays", v: Number(stats.plays as number || 0).toLocaleString(), e: "▶" },
-    { l: "Subscribers", v: String(stats.subscriberCount ?? 0), e: "✉️" },
+    { l: "Revenue (sales)", v: "$" + Number(stats.revenue as number || 0).toFixed(2), e: "MONEY" },
+    { l: "Donations", v: "$" + Number(stats.donationTotal as number || 0).toFixed(2), e: "HEART" },
+    { l: "Plays", v: Number(stats.plays as number || 0).toLocaleString(), e: "PLAY" },
+    { l: "Subscribers", v: String(stats.subscriberCount ?? 0), e: "MAIL" },
   ];
-  const earnings = (stats.earnings as { date: string; revenue: number; donations: number }[]) || [];
-  const max = Math.max(1, ...earnings.map((e) => e.revenue + e.donations));
   return (
     <div>
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
@@ -125,18 +125,6 @@ function Overview({ stats }: { stats: Record<string, unknown> | null }) {
           <Card key={c.l}><div className="text-2xl">{c.e}</div><div className="font-display text-2xl sm:text-3xl mt-1">{c.v}</div><div className="text-xs text-white/50 mt-1">{c.l}</div></Card>
         ))}
       </div>
-      <Card className="mt-4">
-        <div className="text-sm font-bold">Earnings — last 14 days</div>
-        <div className="mt-4 flex items-end gap-1.5 h-36">
-          {earnings.map((e, i) => (
-            <div key={i} className="flex-1 flex flex-col justify-end gap-1 h-full" title={`${e.date}: $${e.revenue.toFixed(2)} + $${e.donations.toFixed(2)}`}>
-              <div className="rounded-t bg-[#D4AF37]/80" style={{ height: `${((e.revenue + e.donations) / max) * 100}%`, minHeight: (e.revenue + e.donations) > 0 ? 6 : 0 }} />
-              <div className="text-[9px] text-white/35 text-center truncate">{e.date}</div>
-            </div>
-          ))}
-        </div>
-        <div className="mt-2 text-[11px] text-white/40">Gold = sales + donations per day • {(stats.salesCount as number) || 0} completed sales • {(stats.pendingSales as number) || 0} pending</div>
-      </Card>
     </div>
   );
 }
