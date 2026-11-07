@@ -1,0 +1,42 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [master, main]
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: kingrhymes
+          POSTGRES_PASSWORD: kingrhymes
+          POSTGRES_DB: kingrhymes_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U kingrhymes -d kingrhymes_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URL: postgresql://kingrhymes:kingrhymes@localhost:5432/kingrhymes_test
+      DIRECT_URL: postgresql://kingrhymes:kingrhymes@localhost:5432/kingrhymes_test
+      JWT_SECRET: ci-only-secret-at-least-32-characters-long
+      ADMIN_EMAIL: artist@example.com
+      ADMIN_SETUP_TOKEN: ci-only-setup-token
+      NEXT_PUBLIC_SITE_URL: http://localhost:3000
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npx drizzle-kit push
+      - run: npm run build

@@ -1,6 +1,7 @@
 import { Card, Button, Badge } from "@/components/ui";
 import { formatMoney } from "@/lib/currency";
 import { useCurrency } from "@/components/providers";
+import Link from "next/link";
 
 export default function StorePage() {
   return (
@@ -34,9 +35,9 @@ export default function StorePage() {
         </Card>
       </div>
       <div className="mt-8 text-center">
-        <a href="/music" className="inline-flex items-center gap-2 rounded-full border border-[#F1D97A]/50 bg-[linear-gradient(145deg,#F1D97A,#D4AF37_58%,#B58D25)] px-6 py-3 text-sm font-black uppercase tracking-wider text-black shadow-[inset_0_1px_0_rgba(255,255,255,0.55),0_6px_0_rgba(85,62,16,0.2),0_10px_24px_rgba(0,0,0,0.25)] transition hover:brightness-110">
+        <Link href="/music" className="inline-flex items-center gap-2 rounded-full border border-[#F1D97A]/50 bg-[linear-gradient(145deg,#F1D97A,#D4AF37_58%,#B58D25)] px-6 py-3 text-sm font-black uppercase tracking-wider text-black shadow-[inset_0_1px_0_rgba(255,255,255,0.55),0_6px_0_rgba(85,62,16,0.2),0_10px_24px_rgba(0,0,0,0.25)] transition hover:brightness-110">
           ▶ Buy An Album
-        </a>
+        </Link>
       </div>
     </div>
   );

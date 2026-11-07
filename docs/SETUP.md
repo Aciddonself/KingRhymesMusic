@@ -118,6 +118,21 @@ For production, set the environment variables in the hosting provider's secret/c
 
 ## 6. Deploy
 
+### Pre-deployment checklist
+
+1. Push the project to GitHub and confirm the `CI` workflow passes on the deployment branch. It runs lint, typecheck, applies the Drizzle schema to a temporary PostgreSQL database, and builds the app. The database and secrets in CI are disposable test values; do not copy them to production.
+2. Configure production secrets in the host dashboard, not in Git. At minimum set `DATABASE_URL`, a high-entropy `JWT_SECRET`, `ADMIN_EMAIL`, and the exact HTTPS `NEXT_PUBLIC_SITE_URL`. Add `ADMIN_SETUP_TOKEN` for initial admin signup; remove or rotate it after the administrator account is created. Add provider credentials only for features you have enabled.
+3. Configure the PostgreSQL provider's backups and point-in-time recovery, and verify you can restore a backup before storing real purchases or user accounts.
+4. Configure durable media storage before enabling admin uploads. Set the S3 variables for both public and private buckets, or use Vercel Blob for public media plus S3 for private full audio. Never expose the private bucket publicly.
+5. Configure the host's request-size limit for `/api/upload` to at least 62 MiB if you need the documented 60 MiB audio uploads. The route also rejects oversized requests and validates common file signatures. A proxy or serverless platform may impose a lower limit first; check its limits before relying on large uploads.
+6. Configure shared rate limiting at the host, CDN, or WAF for login, password reset, signup, checkout, donations, comments, and upload endpoints. The app's in-memory rate limiter is only a per-process fallback and does not coordinate across serverless instances or multiple replicas.
+7. Deploy to a staging URL first. Test admin login, password recovery email, any enabled Google sign-in, public media upload, a private audio download, and Flutterwave test-mode checkout plus webhook. Confirm cancelled/failed payments never unlock audio.
+8. Only after these checks pass, set production payment credentials and provider callback URLs, redeploy, and make a small live transaction that you can refund through the provider dashboard.
+
+The CI workflow is a build and static-check gate, not a full automated test suite. Add automated integration tests for account lifecycle, payment settlement, and download authorization before relying on unattended releases.
+
+For an existing production database, do not blindly run `drizzle-kit push` against live data. Back it up first, review the schema diff, and apply changes in a maintenance window. This project currently does not include a migration history, so establish a Drizzle migration baseline before adopting generated migrations for ongoing production schema changes.
+
 ### Netlify
 
 Connect the GitHub repository to Netlify and deploy the `master` branch. The included `netlify.toml` uses the Next.js build command and standard Next.js output so Netlify's Next.js adapter can handle server rendering and API routes. Set the required environment variables in the Netlify site settings. Set `NEXT_PUBLIC_SITE_URL` to the assigned `https://<site>.netlify.app` URL, then redeploy.
